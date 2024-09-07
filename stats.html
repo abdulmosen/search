@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>إحصائية الأوصاف</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f0f0f0;
+            margin: 0;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: auto;
+            background-color: #ffffff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            color: #ffffff;
+            background-color: #4CAF50;
+            padding: 15px;
+            border-radius: 5px;
+        }
+
+        .menu {
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .menu a {
+            margin: 0 15px;
+            text-decoration: none;
+            color: #4CAF50;
+            font-weight: bold;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        table, th, td {
+            border: 1px solid #ddd;
+        }
+
+        th, td {
+            padding: 10px;
+            text-align: center;
+        }
+
+        th {
+            background-color: #4CAF50;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>إحصائية الأوصاف</h1>
+        <div class="menu">
+            <a href="search.html">العودة إلى الصفحة الرئيسية</a> <!-- رابط للعودة إلى الصفحة الرئيسية -->
+        </div>
+        <div id="statsContainer">
+            <!-- سيتم إضافة الجدول هنا بواسطة JavaScript -->
+        </div>
+    </div>
+
+    <script>
+        // عرض إحصائيات الأوصاف
+        function displayStats(data) {
+            const statsContainer = document.getElementById('statsContainer');
+            const descriptionCounts = {};
+
+            // تجميع عدد الأوصاف بناءً على الكلمة الرئيسية (المدينة)
+            data.forEach(row => {
+                const description = row[0]; // افترض أن الوصف في العمود الأول
+                if (description) {
+                    // استخراج الكلمة الرئيسية للتجميع (مثل المدينة)
+                    let key = extractKey(description);
+                    if (key) {
+                        descriptionCounts[key] = (descriptionCounts[key] || 0) + 1;
+                    }
+                }
+            });
+
+            let tableHTML = '<table><tr><th>المدينة</th><th>العدد</th></tr>';
+            for (let key in descriptionCounts) {
+                tableHTML += `<tr><td>${key}</td><td>${descriptionCounts[key]}</td></tr>`;
+            }
+            tableHTML += '</table>';
+
+            statsContainer.innerHTML = tableHTML;
+        }
+
+        // دالة لاستخراج الكلمة الرئيسية (المدينة) من الوصف
+        function extractKey(description) {
+            const keywords = ["Quba", "Sewage", "المدينة", "الرياض", "جدة"]; // أضف المدن أو الكلمات الرئيسية هنا
+            for (let word of keywords) {
+                if (description.includes(word)) {
+                    return word;
+                }
+            }
+            return "أخرى"; // في حال عدم وجود كلمة رئيسية
+        }
+
+        // استرجاع البيانات من IndexedDB
+        function getDataFromIndexedDB() {
+            let db;
+            const request = window.indexedDB.open("ExcelDatabase", 1);
+
+            request.onsuccess = function(event) {
+                db = event.target.result;
+                const transaction = db.transaction(["excelData"], "readonly");
+                const objectStore = transaction.objectStore("excelData");
+                const getRequest = objectStore.get(1);
+
+                getRequest.onsuccess = function(event) {
+                    if (getRequest.result) {
+                        displayStats(getRequest.result.data);
+                    } else {
+                        console.error("No data found in the database.");
+                    }
+                };
+
+                getRequest.onerror = function(event) {
+                    console.error("Error fetching data: ", event.target.error);
+                };
+            };
+
+            request.onerror = function(event) {
+                console.error("Database error: ", event.target.errorCode);
+            };
+        }
+
+        // تحميل البيانات عند تحميل الصفحة
+        getDataFromIndexedDB();
+    </script>
+</body>
+</html>
